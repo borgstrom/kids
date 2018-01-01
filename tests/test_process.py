@@ -50,6 +50,31 @@ def test_terminate_on_shutdown():
     assert time.time() - start >= 0.5
 
 
+def test_explicit_start():
+    class MyProcess(Subprocess):
+        EXPLICIT_START = True
+
+        def run(self):
+            time.sleep(0.1)
+
+    proc = MyProcess()
+    assert proc.process is None
+    proc.start()
+    assert proc.process is not None
+    proc.shutdown()
+
+
+def test_start_assertion():
+    class MyProcess(Subprocess):
+        def run(self):
+            time.sleep(0.1)
+
+    proc = MyProcess()
+    with pytest.raises(AssertionError):
+        proc.start()
+    proc.shutdown()
+
+
 def test_atexit():
     class MyProcess(Subprocess):
         WAIT_FOR_CHILD = True

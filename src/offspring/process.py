@@ -42,6 +42,8 @@ class Subprocess(object):
         pass
 
     def start(self):
+        assert self.process is None, "Start called multiple times!"
+
         if self.WAIT_FOR_CHILD:
             # we use a pipe to confirm that the child has started up before we move on
             def bootstrap(writer):
