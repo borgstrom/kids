@@ -69,10 +69,9 @@ def test_atexit():
 
 def test_loop():
     class MyLoop(SubprocessLoop):
-        def __init__(self, q):
+        def init(self, q):
             self.counter = 0
             self.q = q
-            self.start()
 
         def loop(self):
             self.counter += 1
@@ -103,10 +102,9 @@ def test_loop():
 
 def test_loop_sigterm():
     class MyLoop(SubprocessLoop):
-        def __init__(self, q):
+        def init(self, q):
             self.counter = 0
             self.q = q
-            self.start()
 
         def loop(self):
             self.counter += 1

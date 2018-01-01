@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 class Subprocess(object):
     """Object process implementation.
 
-    The __init__() method runs in the parent process and sets up the instance however you need before a copy is made for
+    The init() method runs in the parent process and sets up the instance however you need before a copy is made for
     the subprocess.
 
     The run() method runs in the child process and implements whatever logic this process should execute.
@@ -20,6 +20,7 @@ class Subprocess(object):
 
     WAIT_FOR_CHILD = False
     TERMINATE_ON_SHUTDOWN = True
+    EXPLICIT_START = False
 
     def __new__(cls, *args, **kwargs):
         obj = super(Subprocess, cls).__new__(cls)
@@ -32,8 +33,13 @@ class Subprocess(object):
 
         return obj
 
-    def __init__(self):
-        self.start()
+    def __init__(self, *args, **kwargs):
+        self.init(*args, **kwargs)
+        if not self.EXPLICIT_START:
+            self.start()
+
+    def init(self, *args, **kwargs):
+        pass
 
     def start(self):
         if self.WAIT_FOR_CHILD:
@@ -61,12 +67,9 @@ class Subprocess(object):
         def recursively_shutdown(cls):
             for klass in cls.__subclasses__():
                 recursively_shutdown(klass)
-                try:
+                if klass._INSTANCES is not None:
                     for obj in klass._INSTANCES:
                         obj.shutdown()
-                except TypeError:
-                    # _INSTANCES is not a list, no processes were created on this class
-                    pass
         recursively_shutdown(cls)
 
         # join all child processes
@@ -77,13 +80,14 @@ class Subprocess(object):
             log.debug("Shutting down %s", self)
             if self.TERMINATE_ON_SHUTDOWN:
                 self.process.terminate()
+            self.wait()
+
+    def wait(self):
+        if self.process:
             self.process.join()
 
     def run(self):
         raise NotImplementedError
-
-    def wait(self):
-        self.process.join()
 
 
 atexit.register(Subprocess.atexit)
@@ -94,7 +98,7 @@ class SubprocessLoop(Subprocess):
 
     The begin() method is called before the loop begins.
 
-    The loop() method implements the main logic, returns how long to sleep before the next loop or False to stop the
+    The loop() method implements the main logic, return how long to sleep before the next loop or False to stop the
     loop.
 
     The end() is called when it ends, regardless of how it ends.
@@ -118,7 +122,7 @@ class SubprocessLoop(Subprocess):
                     self.alive = False
                 else:
                     time.sleep(loop_status or 0.05)
-        except (SystemExit, KeyboardInterrupt):
+        except KeyboardInterrupt:
             log.debug("Exit via interrupt")
         finally:
             self.end()
