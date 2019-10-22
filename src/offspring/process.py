@@ -83,6 +83,8 @@ class Subprocess(object):
             if self.TERMINATE_ON_SHUTDOWN:
                 self.process.terminate()
             self.wait()
+            while self in self._INSTANCES:
+                self._INSTANCES.remove(self)
 
     def wait(self):
         if self.process:
